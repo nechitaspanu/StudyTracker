@@ -20,7 +20,7 @@ SomeClass *getC() {
 
 int main() {
     ///
-    std::cout << "Hello, world!\n";
+    std::cout << "Hello, world ffffffffffffffff!\n";
     std::array<int, 100> v{};
     int nr;
     std::cout << "Introduceți nr: ";
