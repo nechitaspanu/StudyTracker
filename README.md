@@ -1,4 +1,5 @@
-# Nu primesc notă pentru că nu am pus titlu și descriere
+# **Study Tracker** este o aplicație care îi ajută pe studenți să își organizeze activitatea academică. În cadrul acesteia, utilizatorul poate să își adauge cursurile și să vizualizeze progresul parcurs la fiecare, exprimat în procente, să introducă teme cu deadline și să vadă rapid care sunt cele mai urgente, precum și să noteze datele importante din sesiune (examene, colocvii, teste). Aplicația oferă astfel o imagine de ansamblu asupra studiului, facilitând gestionarea timpului și planificarea eficientă a activităților.
+
 
 ### Folosiți template-ul corespunzător grupei voastre!
 
