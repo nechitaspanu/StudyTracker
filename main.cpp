@@ -7,9 +7,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
-#include <chrono>
 #include <iomanip>
-#include <array>
 #include <vector>
 #include <algorithm>
 
@@ -47,19 +45,19 @@ public:
 
     ~TextBuffer() { delete[] data_;}
 
-    const char* c_str() const {
+    [[nodiscard]] const char* c_str() const {
         if (data_) return data_;
         return "";
     }
 
-    size_t size() const {return len_;}
+    [[nodiscard]] size_t size() const {return len_;}
 
 
     friend std::ostream& operator<<(std::ostream& os, const TextBuffer& tb) {
         return os << tb.c_str(); //nu stiu daca e bun
     }
     };
-    static chrono::sys_days parseDate(const std::string& ymd) {
+    static std::chrono::sys_days parseDate(const std::string& ymd) {
         int y, m, d;
         char c1, c2;
         istringstream is(ymd); //permite sa parcurgem ca intr un stream (ca cin)
@@ -79,9 +77,9 @@ public:
         using namespace std::chrono;
         year_month_day ymd = dd;
         ostringstream os;
-        os << int(ymd.year()) << '-'
-        << std::setw(2) << std::setfill('0') << static_cast<unsigned>(ymd.month()) << '-'
-        << std::setw(2) << std::setfill('0') << static_cast<unsigned>(ymd.day());
+        os << int(ymd.year()) <<
+            '-'<< std::setw(2) << std::setfill('0') << static_cast<unsigned>(ymd.month()) <<
+                '-'<< std::setw(2) << std::setfill('0') << static_cast<unsigned>(ymd.day());
 
         return os.str();
     }
@@ -93,24 +91,24 @@ public:
         chrono::sys_days due_;
 
     public:
-        explicit Assignment(string title, const char* notes, const string& due)
-            : title_(move(title)), notes_(notes), due_(parseDate(due)) {}
+        explicit Assignment(std::string title, const char* notes, const std::string& due)
+            : title_(std::move(title)), notes_(notes), due_(parseDate(due)) {}
 
-        const string& title() const {return title_;}
-        const TextBuffer& notes() const {return notes_;}
-        chrono::sys_days due() const {return due_;}
+        [[nodiscard]]const string& title() const {return title_;}
+        [[nodiscard]]const TextBuffer& notes() const {return notes_;}
+        [[nodiscard]]std::chrono::sys_days due() const {return due_;}
 
-        bool isDueWithinDays(int daysCount) const{
+        [[nodiscard]] bool isDueWithinDays(int daysCount) const{
             using namespace std::chrono;
             const sys_days today = floor <days> (system_clock::now());
             return due_ >= today && due_ <= today + days{daysCount};
         }
     };
 
-    ostream& operator<<(ostream& os, const Assignment& a) {
-        return os << "Assignment {title = '"  << a.title()
-                  << ", due = " << formatDate(a.due())
-                  << ", notes = " << a.notes() << "'}";
+        std::ostream& operator<<(std::ostream& os, const Assignment& a) {
+            return os << "Assignment {title = '"  << a.title()
+                  << "', due = " << formatDate(a.due())
+                  << ", notes = '" << a.notes() << "'}";
     }
 
     class Course {
@@ -118,22 +116,22 @@ public:
             string name_;
             int totalUnits_;
             int completedUnits_;
-            int clamp(int v, int lo, int hi) { return max(lo, min(v, hi));}
+            static int clamp(int v, int lo, int hi) { return std::max(lo, std::min(v, hi));}
 
     public:
         explicit Course(string name, int totalUnits, int completedUnits = 0)
-            : name_(move(name)),
+            : name_(std::move(name)),
               totalUnits_(max(0, totalUnits)),
               completedUnits_(clamp(completedUnits, 0, max(0, totalUnits))) {}
 
-        const string& name() const { return name_;}
-        int totalUnits() const { return totalUnits_;}
-        int completedUnits() const { return completedUnits_;}
+        [[nodiscard]]const std::string& name() const { return name_;}
+        [[nodiscard]]int totalUnits() const { return totalUnits_;}
+        [[nodiscard]]int completedUnits() const { return completedUnits_;}
 
         void completeUnits(int n) {
             completedUnits_ = clamp(completedUnits_ + max(0, n), 0, totalUnits_);
         }
-            double progress() const {
+            [[nodiscard]]double progress() const {
                 if (totalUnits_ == 0) return 0.0;
                 return 100.0 * static_cast<double>(completedUnits_) / static_cast<double>(totalUnits_);}
     };
@@ -151,10 +149,10 @@ class CalendarEvent {
         chrono::sys_days date_;
 
     public:
-        explicit CalendarEvent(string label, const string& ymd) : label_(move(label)), date_(parseDate(ymd)) {}
+        explicit CalendarEvent(string label, const string& ymd) : label_(std::move(label)), date_(parseDate(ymd)) {}
 
-        const string& label() const { return label_;}
-        chrono::sys_days date() const { return date_;}
+        [[nodiscard]]const string& label() const { return label_;}
+        [[nodiscard]]chrono::sys_days date() const { return date_;}
     };
 
     ostream& operator<<(ostream& os, const CalendarEvent& e) {
@@ -167,7 +165,7 @@ class CalendarEvent {
         vector<Assignment> assignments_;
         vector<CalendarEvent> events_;
 
-        const Course* findCourse(const string& name) const {
+        [[nodiscard]]const Course* findCourse(const string& name) const {
             for (const auto&  c : courses_) if (c.name() == name ) return &c;
             return nullptr;
         }
@@ -177,7 +175,7 @@ class CalendarEvent {
         void addAssignment(const Assignment& a) {assignments_.push_back(a);}
         void addEvent(const CalendarEvent& e) {events_.push_back(e);}
 
-        double overallProgress() const {
+        [[nodiscard]]double overallProgress() const {
             long long total = 0, done = 0;
             for (const auto& c : courses_ ) {
                 total += c.totalUnits();
@@ -189,7 +187,7 @@ class CalendarEvent {
             }
         }
 
-        std::vector<Assignment> upcomingDeadlines(int days) const {
+        [[nodiscard]]std::vector<Assignment> upcomingDeadlines(int days) const {
             std::vector<Assignment> result;
 
             for (const Assignment& a : assignments_) {
@@ -206,7 +204,7 @@ class CalendarEvent {
             return result;                                    // returnăm vectorul
         }
 
-        string courseReport(const string& name) const {
+        [[nodiscard]]string courseReport(const string& name) const {
             const Course* c = findCourse(name);
             if (!c) return "Course not found";
             ostringstream os;
@@ -269,7 +267,7 @@ int main() {
     StudyTracker st;
 
     //cursuri
-    st.addCourse(Course("POO", 12, 3));
+    st.addCourse(Course("POO", 12, 7));
     st.addCourse(Course("Algoritmi", 10, 4));
     st.addCourse(Course("Baze de date", 8, 2));
 
