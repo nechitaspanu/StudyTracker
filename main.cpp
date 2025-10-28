@@ -84,6 +84,41 @@ public:
         return os.str();
     }
 
+std::string readLine(const std::string& prompt) {
+        std::cout << prompt;
+        std::string s;
+        std::getline(std::cin, s);
+        return s;
+    }
+
+int readInt(const std::string& prompt, int lo, int hi) {
+        while (true) {
+            std::cout << prompt;
+            int x;
+            if (std::cin >> x) {
+                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                if (x>=lo && x<=hi) return x;
+            }
+        }
+        std::cin.clear();
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        std::cout<<"invalid input. try again\n";
+
+    }
+
+std::string readDateYMD(const std::string& prompt) {
+        while (true) {
+            std::string s = readLine(prompt);
+            try {
+                (void) parseDate(s);
+                return s;
+            } catch (const std::exception& e) {
+                std::cout<<"invalid input: " << e.what()<< "(format: YYYY-MM-DD\n";
+            }
+        }
+
+    }
+
     class Assignment {
     private:
         string title_;
@@ -226,31 +261,53 @@ class CalendarEvent {
         }
     };
 
+    void addAssignment(StudyTracker& st) {
+        std::string title = readLine("Homework: ");
+        std::string notes = readLine("Notes: ");
+        std::string due = readLine("Due (YYYY-MM-DD): ");
+
+        st.addAssignment(Assignment(title, notes.c_str(), due));
+        std::cout << "Added homework.\n";
+    }
+
+    void addCourseFromInput(StudyTracker& st) {
+        std::string name = readLine("Course title: ");
+        int total = readInt("Total courses (>=0):", 0, 10000);
+        int done = readInt("Read courses (0 - total):", 0, total);
+
+        st.addCourse(Course(name, total, done));
+        std::cout << "Added course.\n";
+    }
+
+    void addSessionDate(StudyTracker& st) {
+        while (true) {
+            std::string label = readLine("Event title:");
+            if (label.empty()) break;
+            std::string date = readDateYMD("Date (YYYY-MM-DD): ");
+            st.addEvent(CalendarEvent(label, date));
+            std::cout << "Added event." << label << "-" << date << "\n";
+
+        }
+    }
+
+
 int main() {
+        ios::sync_with_stdio(false);
+        StudyTracker st;
 
-    ios::sync_with_stdio(false);
-    StudyTracker st;
+        while (true) {
+            std::cout <<"\n1) Add course\n2) Add homework\n3) Add session date \n4) Show all \n0) Exit\n> ";
+            int opt;
+            if (!(std::cin >> opt)) break;
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
-    //cursuri
-    Course poo{"POO", 12, 7};
-    poo.completeUnits(2);
-    st.addCourse(poo);
-    st.addCourse(Course("Algoritmi", 10, 4));
-    st.addCourse(Course("Baze de date", 8, 2));
+            if (opt == 0) break;
+            if (opt == 1) addCourseFromInput(st);
+            else if (opt == 2) addAssignment(st);
+            else if (opt == 3) addSessionDate(st);
+            else if (opt == 4) std::cout << st << "\n";
+            else std::cout << "Invalid option.\n";
+        }
 
-    //teme
-    st.addAssignment(Assignment("Tema 1 POO", "clase", "2025-11-10"));
-    st.addAssignment(Assignment("Tema 2 Algoritmi", "Divide et Impera", "2025-12-15"));
-    st.addAssignment(Assignment("BD Lab 3", "join", "2026-01-12"));
-
-    st.addEvent(CalendarEvent("Sesiune iarna", "2026-01-20"));
-    st.addEvent(CalendarEvent("Colocviu POO", "2025-12-20"));
-
-    cout << st << "\n";
-    cout << "Raport POO" << st.courseReport("POO") << "\n";
-    auto soon = st.upcomingDeadlines(14);
-    cout << "\nDeadline in urmatoarele 14 zile:\n";
-    for (const auto& a : soon) cout << "* " << a << "\n";
-
-    return 0;
-}
+        return 0;
+    }
