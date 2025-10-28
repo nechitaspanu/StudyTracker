@@ -60,8 +60,8 @@ public:
     static std::chrono::sys_days parseDate(const std::string& ymd) {
         int y, m, d;
         char c1, c2;
-        istringstream is(ymd); //permite sa parcurgem ca intr un stream (ca cin)
-        if (!(is >> y >> c1 >> m >> c2 >> d) || c1 != '-' || c2 != '-') throw runtime_error ("invalid date");
+        istringstream is(ymd);
+        if (!(is >> y >> c1 >> m >> c2 >> d) || c1 != '-' || c2 != '-') throw runtime_error ("Invalid date");
         using namespace std::chrono;
 
         year_month_day ymdv{ year{y},
@@ -69,7 +69,7 @@ public:
                         day{  static_cast<unsigned>(d)}
         };
 
-        if (!ymdv.ok()) throw std::runtime_error("invalid calendar date");
+        if (!ymdv.ok()) throw std::runtime_error("Invalid calendar date");
         return sys_days{ymdv};
 }
 
@@ -98,11 +98,13 @@ int readInt(const std::string& prompt, int lo, int hi) {
             if (std::cin >> x) {
                 std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
                 if (x>=lo && x<=hi) return x;
+            } else {
+                std::cin.clear();
+                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
             }
+            std::cout << "Invalid input. Try again (" << lo << "..." << hi << ").\n";
         }
-        std::cin.clear();
-        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-        std::cout<<"invalid input. try again\n";
+
 
     }
 
@@ -113,7 +115,7 @@ std::string readDateYMD(const std::string& prompt) {
                 (void) parseDate(s);
                 return s;
             } catch (const std::exception& e) {
-                std::cout<<"invalid input: " << e.what()<< "(format: YYYY-MM-DD\n";
+                std::cout<<"Invalid input: " << e.what()<< "(format: YYYY-MM-DD)\n";
             }
         }
 
@@ -192,7 +194,7 @@ class CalendarEvent {
     };
 
     ostream& operator<<(ostream& os, const CalendarEvent& e) {
-        return os << "Event {" << e.label() << "@" << formatDate(e.date()) << "}";
+        return os << "Event {" << e.label() << "->" << formatDate(e.date()) << "}";
     }
 
     class StudyTracker {
@@ -259,6 +261,16 @@ class CalendarEvent {
             << st.overallProgress() << "%\n";
             return os;
         }
+
+        bool completeCourseUnits(const std::string& name, int units) {
+            for (auto& c : courses_) {
+                if (c.name() == name) {
+                    c.completeUnits(units);
+                    return true;
+                }
+            }
+            return false;
+        }
     };
 
     void addAssignment(StudyTracker& st) {
@@ -302,11 +314,13 @@ int main() {
                 << "3) Add exam date\n"
                 << "4) Show progress\n"
                 << "5) Course report by name\n"
+                << "6) Show deadlines in the next N days\n"
+                << "7) Mark course units as completed\n"
                 << "0) Exit\n> ";
 
             int opt{};
-            if (!(std::cin >> opt)) {              // dacă intrarea se strică (EOF)
-                return 0;                           // ieșim curat
+            if (!(std::cin >> opt)) {
+                return 0;
             }
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
@@ -317,13 +331,33 @@ int main() {
                 case 3: addSessionDate(st);        break;
                 case 4: std::cout << st << "\n";    break;
                 case 5: {
-                    std::string name = readLine("Nume curs: ");
+                    std::string name = readLine("Course title: ");
                     std::cout << st.courseReport(name) << "\n";
                     break;
                 }
                 default:
                     std::cout << "Invalid option.\n";
                     break;
+                case 6: {
+                    int days = readInt("Days ahead (>=1): ", 1, 3650);
+                    auto v = st.upcomingDeadlines(days);
+                    if (v.empty()) {
+                        std::cout << "No assignments in the next " << days << " days.\n";
+                    } else {
+                        std::cout << "Assignments in the next" << days << " days:\n";
+                        for (const auto& a : v) std::cout << "  * " << a << "\n";
+                    }
+                    break;
+                }
+                case 7: {
+                    std::string name = readLine("Course title: ");
+                    int units = readInt("Units to mark as completed (>=0): ", 0, 1'000'000);
+
+                    bool ok = st.completeCourseUnits(name, units);
+                    std::cout << (ok ? "Updated.\n" : "Course not found.\n");
+                    break;
+                }
+
             }
         }
 
