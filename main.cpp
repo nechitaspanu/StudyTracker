@@ -296,18 +296,37 @@ int main() {
         StudyTracker st;
 
         while (true) {
-            std::cout <<"\n1) Add course\n2) Add homework\n3) Add session date \n4) Show all \n0) Exit\n> ";
-            int opt;
-            if (!(std::cin >> opt)) break;
+            std::cout
+                << "\n1) Add course\n"
+                << "2) Add homework\n"
+                << "3) Add exam date\n"
+                << "4) Show progress\n"
+                << "5) Course report by name\n"
+                << "0) Exit\n> ";
+
+            int opt{};
+            if (!(std::cin >> opt)) {              // dacă intrarea se strică (EOF)
+                return 0;                           // ieșim curat
+            }
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
-            if (opt == 0) break;
-            if (opt == 1) addCourseFromInput(st);
-            else if (opt == 2) addAssignment(st);
-            else if (opt == 3) addSessionDate(st);
-            else if (opt == 4) std::cout << st << "\n";
-            else std::cout << "Invalid option.\n";
+            switch (opt) {
+                case 0: return 0;
+                case 1: addCourseFromInput(st);     break;
+                case 2: addAssignment(st); break;
+                case 3: addSessionDate(st);        break;
+                case 4: std::cout << st << "\n";    break;
+                case 5: {
+                    std::string name = readLine("Nume curs: ");
+                    std::cout << st.courseReport(name) << "\n";
+                    break;
+                }
+                default:
+                    std::cout << "Invalid option.\n";
+                    break;
+            }
         }
+
 
         return 0;
     }
