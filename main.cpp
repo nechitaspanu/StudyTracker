@@ -105,10 +105,11 @@ public:
         }
     };
 
+
         std::ostream& operator<<(std::ostream& os, const Assignment& a) {
             return os << "Assignment {title = '"  << a.title()
                   << "', due = " << formatDate(a.due())
-                  << ", notes = '" << a.notes() << "'}";
+                  << ", notes = '" << a.notes() << "'" << " (" << a.notes().size() << " chars)}";
     }
 
     class Course {
