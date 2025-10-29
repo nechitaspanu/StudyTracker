@@ -389,6 +389,9 @@ class CalendarEvent {
         return false;
     }
 
+
+
+
     void addAssignment(StudyTracker& st) {
         std::string title = readLine("Homework: ");
         std::string notes = readLine("Notes: ");
@@ -535,7 +538,7 @@ int main() {
                 }
                 case 7: {
                     std::string name = readLine("Course title: ");
-                    int units = readInt("Units to mark as completed: ", 0, 1'000'000);
+                    int units = readInt("Units to mark as completed (>=0): ", 0, 1'000'000);
 
                     bool ok = st.completeCourseUnits(name, units);
                     std::cout << (ok ? "Updated.\n" : "Course not found.\n");
