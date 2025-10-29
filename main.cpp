@@ -389,9 +389,6 @@ class CalendarEvent {
         return false;
     }
 
-
-
-
     void addAssignment(StudyTracker& st) {
         std::string title = readLine("Homework: ");
         std::string notes = readLine("Notes: ");

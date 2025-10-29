@@ -1,2 +1,20 @@
-5
-11 22 33 44 55
+1
+curs 1 POO
+15
+7
+1
+curs 2 SDA
+14
+13
+2
+tema bd
+join-uri
+2025-10-30
+2
+tema sda
+lista
+2025-11-21
+3
+colocviu poo
+2025-11-13
+0
