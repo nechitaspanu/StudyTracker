@@ -11,6 +11,7 @@
 #include <vector>
 #include <algorithm>
 
+
 using namespace std;
 
 class TextBuffer {
@@ -77,7 +78,7 @@ public:
         using namespace std::chrono;
         year_month_day ymd = dd;
         ostringstream os;
-        os << int(ymd.year()) <<
+        os << static_cast<int>(ymd.year()) <<
             '-'<< std::setw(2) << std::setfill('0') << static_cast<unsigned>(ymd.month()) <<
                 '-'<< std::setw(2) << std::setfill('0') << static_cast<unsigned>(ymd.day());
 
@@ -235,7 +236,8 @@ class CalendarEvent {
             if (total == 0) {
                 return 0.0;
             } else {
-                return 100.0 * static_cast<double>(done) / total;
+                return 100.0 * static_cast<double>(done) / static_cast<double>(total);
+
             }
         }
 
@@ -558,6 +560,4 @@ int main() {
             }
         }
 
-
-        return 0;
     }

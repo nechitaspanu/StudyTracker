@@ -1,2 +1,17 @@
-5
-11 22 33 44 55
+2
+Matematica
+75
+2
+Tema 1 - Integrale
+2025-11-10
+Tema 2 - Derivate
+2025-11-15
+Programare C++
+50
+3
+Tema 1 - Clase si Obiecte
+2025-11-08
+Tema 2 - Pointeri
+2025-11-12
+Tema 3 - STL
+2025-11-20
