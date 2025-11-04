@@ -10,6 +10,8 @@
 #include <iomanip>
 #include <vector>
 #include <algorithm>
+#include <fstream>
+
 
 using namespace std;
 
@@ -479,10 +481,44 @@ class CalendarEvent {
     std::cout << (st.setEventDate(l, d) ? "Updated.\n" : "Event not found.\n");
     }
 
+    void dateSt(StudyTracker& st) {
+        const std::string DATA = "tastatura.txt";
+        std::ifstream fin(DATA);
+        if (!fin.is_open()) {
+            std::cerr << "Error opening file " << DATA << "\n";
+            return;
+        }
+        std::string line;
+        while (std::getline(fin, line)) {
+            if (line.empty()) continue;
+            std::istringstream in(line);
+            int tip;
+            in >> tip;
+
+            if (tip == 1) {
+                std::string name;
+                int total, done;
+                in >> name >> total >> done;
+                st.addCourse(Course(name, total, done));
+            } else if (tip == 2) {
+                std::string title, notes, due;
+                in >> title >> notes >> due;
+                st.addAssignment(Assignment(title, notes.c_str(), due));
+            } else if (tip == 3) {
+                std::string label, date;
+                in >> label >> date;
+                st.addEvent(CalendarEvent(label, date));
+            }
+        }
+    }
+
 
 int main() {
         ios::sync_with_stdio(false);
         StudyTracker st;
+
+        dateSt(st);
+
 
         while (true) {
             std::cout
