@@ -11,8 +11,10 @@
 #include <vector>
 #include <algorithm>
 #include <fstream>
+#include <filesystem>
+#include <unordered_set>
 
-
+namespace fs = std::filesystem;
 using namespace std;
 
 class TextBuffer {
@@ -56,7 +58,7 @@ public:
 
 
     friend std::ostream& operator<<(std::ostream& os, const TextBuffer& tb) {
-        return os << tb.c_str(); //nu stiu daca e bun
+        return os << tb.c_str();
     }
     };
     static std::chrono::sys_days parseDate(const std::string& ymd) {
@@ -210,6 +212,11 @@ class CalendarEvent {
             return nullptr;
         }
 
+        static std::string keyCourse(const Course& c);
+        static std::string keyAssignment(const Assignment& a);
+        static std::string keyEvent(const CalendarEvent& e);
+
+
     public:
         void addCourse(const Course& c) {courses_.push_back(c);}
         void addAssignment(const Assignment& a) {assignments_.push_back(a);}
@@ -228,6 +235,9 @@ class CalendarEvent {
 
         bool renameEvent(const std::string& oldLabel, const std::string& newLabel);
         bool setEventDate(const std::string& label, const std::string& newDateYMD);
+
+        void clearAll();
+        void dedupe();
 
         [[nodiscard]]double overallProgress() const {
             long long total = 0, done = 0;
@@ -252,10 +262,10 @@ class CalendarEvent {
 
             std::sort(result.begin(), result.end(),
                       [](const Assignment& x, const Assignment& y) {
-                          return x.due() < y.due();        // sortare după dată
+                          return x.due() < y.due();
                       });
 
-            return result;                                    // returnăm vectorul
+            return result;
         }
 
         [[nodiscard]]string courseReport(const string& name) const {
@@ -278,6 +288,8 @@ class CalendarEvent {
             return os;
         }
 
+        friend void saveToFile(const StudyTracker& st, const std::string& path);
+
         bool completeCourseUnits(const std::string& name, int units) {
             for (auto& c : courses_) {
                 if (c.name() == name) {
@@ -287,6 +299,7 @@ class CalendarEvent {
             }
             return false;
         }
+
     };
 
     bool StudyTracker::removeCourse(const std::string& name) {
@@ -316,7 +329,6 @@ class CalendarEvent {
     bool StudyTracker::renameCourse(const std::string& oldName, const std::string& newName) {
         for (auto& c : courses_) {
             if (c.name() == oldName) {
-                // mic "hack": refacem obiectul cu noul nume, păstrând unitățile
                 Course tmp(newName, c.totalUnits(), c.completedUnits());
                 c = tmp;
                 return true;
@@ -391,7 +403,61 @@ class CalendarEvent {
         return false;
     }
 
+    void StudyTracker::clearAll() {
+        courses_.clear();
+        assignments_.clear();
+        events_.clear();
+    }
 
+    std::string StudyTracker::keyCourse(const Course& c) {
+        std::ostringstream k;
+        k << c.name() << '|' << c.totalUnits() << '|' << c.completedUnits();
+        return k.str();
+    }
+
+    std::string StudyTracker::keyAssignment(const Assignment& a) {
+        std::ostringstream k;
+        k << a.title() << '|' << a.notes().c_str() << '|' << formatDate(a.due());
+        return k.str();
+    }
+
+    std::string StudyTracker::keyEvent(const CalendarEvent& e) {
+        std::ostringstream k;
+        k << e.label() << '|' << formatDate(e.date());
+        return k.str();
+    }
+
+    void StudyTracker::dedupe() {
+        {
+            std::unordered_set<std::string> seen;
+            std::vector<Course> out; out.reserve(courses_.size());
+            for (const auto& c : courses_) {
+                auto k = keyCourse(c);
+                if (seen.insert(k).second) out.push_back(c);
+            }
+            courses_.swap(out);
+        }
+
+        {
+            std::unordered_set<std::string> seen;
+            std::vector<Assignment> out; out.reserve(assignments_.size());
+            for (const auto& a : assignments_) {
+                auto k = keyAssignment(a);
+                if (seen.insert(k).second) out.push_back(a);
+            }
+            assignments_.swap(out);
+        }
+
+        {
+            std::unordered_set<std::string> seen;
+            std::vector<CalendarEvent> out; out.reserve(events_.size());
+            for (const auto& e : events_) {
+                auto k = keyEvent(e);
+                if (seen.insert(k).second) out.push_back(e);
+            }
+            events_.swap(out);
+        }
+    }
 
 
     void addAssignment(StudyTracker& st) {
@@ -481,119 +547,186 @@ class CalendarEvent {
     std::cout << (st.setEventDate(l, d) ? "Updated.\n" : "Event not found.\n");
     }
 
-    void dateSt(StudyTracker& st) {
-        const std::string DATA = "tastatura.txt";
-        std::ifstream fin(DATA);
-        if (!fin.is_open()) {
-            std::cerr << "Error opening file " << DATA << "\n";
-            return;
-        }
+
+    void loadFromFiles(StudyTracker& st, const std::string& path);
+    void saveToFiles(StudyTracker& st, const std::string& path);
+
+    static std::string packNoSpaces(std::string s) {
+    for (char& c : s) if (std::isspace(static_cast<unsigned char>(c))) c = '_';
+    return s;
+    }
+
+    void loadFromFiles(StudyTracker& st, const std::string& path) {
+        std::ifstream fin(path);
+        if (!fin) return;
+
         std::string line;
         while (std::getline(fin, line)) {
-            if (line.empty()) continue;
+            if (line.empty() || line[0] == '#') continue;
             std::istringstream in(line);
+
             int tip;
-            in >> tip;
+            if (!(in >> tip)) continue;
 
             if (tip == 1) {
-                std::string name;
-                int total, done;
-                in >> name >> total >> done;
-                st.addCourse(Course(name, total, done));
+                std::string name; int total, done;
+                if (in >> name >> total >> done) {
+                    st.addCourse(Course(name, total, done));
+                }
             } else if (tip == 2) {
                 std::string title, notes, due;
-                in >> title >> notes >> due;
-                st.addAssignment(Assignment(title, notes.c_str(), due));
+                if (in >> title >> notes >> due) {
+                    st.addAssignment(Assignment(title, notes.c_str(), due));
+                }
             } else if (tip == 3) {
                 std::string label, date;
-                in >> label >> date;
-                st.addEvent(CalendarEvent(label, date));
+                if (in >> label >> date) {
+                    st.addEvent(CalendarEvent(label, date));
+                }
             }
+        }
+    }
+
+    void saveToFile(const StudyTracker& st, const std::string& path) {
+        std::ofstream out(path, std::ios::trunc);
+        if (!out) {
+            std::cerr << "ERROR" << path << "\n";
+            return;
+        }
+
+        for (const auto& c : st.courses_) {
+            out << 1 << ' '
+                << packNoSpaces(c.name()) << ' '
+                << c.totalUnits() << ' '
+                << c.completedUnits() << '\n';
+        }
+
+        for (const auto& a : st.assignments_) {
+            out << 2 << ' '
+                << packNoSpaces(a.title()) << ' '
+                << packNoSpaces(a.notes().c_str()) << ' '
+                << formatDate(a.due()) << '\n';
+        }
+
+        for (const auto& e : st.events_) {
+            out << 3 << ' '
+                << packNoSpaces(e.label()) << ' '
+                << formatDate(e.date()) << '\n';
         }
     }
 
 
 int main() {
-        ios::sync_with_stdio(false);
-        StudyTracker st;
+    ios::sync_with_stdio(false);
+    StudyTracker st;
 
-        dateSt(st);
+    const fs::path SEED_FILE = "tastatura.txt";
+    const fs::path SAVE_FILE = fs::current_path() / "save_data.txt";
 
+    auto loadSeed = [&](){
+        st.clearAll();
+        loadFromFiles(st, SEED_FILE.string());
+        st.dedupe();
+        std::cout << "[seeded]  " << fs::absolute(SEED_FILE) << "\n";
+    };
+    auto loadSave = [&](){
+        st.clearAll();
+        loadFromFiles(st, SAVE_FILE.string());
+        st.dedupe();
+        std::cout << "[loaded]  " << fs::absolute(SAVE_FILE) << "\n";
+    };
+    auto save = [&](){
+        st.dedupe();
+        saveToFile(st, SAVE_FILE.string());
+        std::cout << "[saved]   " << fs::absolute(SAVE_FILE) << "\n";
+    };
 
-        while (true) {
-            std::cout
-                << "\n1) Add course\n"
-                << "2) Add homework\n"
-                << "3) Add exam date\n"
-                << "4) Show progress\n"
-                << "5) Course report by name\n"
-                << "6) Show deadlines in the next N days\n"
-                << "7) Mark course units as completed\n"
-                << "8) Remove course\n"
-                << "9) Remove assignment\n"
-                << "10) Remove event\n"
-                << "11) Rename course\n"
-                << "12) Set course units\n"
-                << "13) Edit assignment title\n"
-                << "14) Edit assignment due\n"
-                << "15) Edit assignment notes\n"
-                << "16) Rename event\n"
-                << "17) Set event date\n"
-                << "0) Exit\n> ";
+    // Load ONCE
+    if (fs::exists(SAVE_FILE)) loadSave(); else loadSeed();
 
-            int opt{};
-            if (!(std::cin >> opt)) {
-                return 0;
+    while (true) {
+        std::cout
+            << "\n1) Add course\n"
+            << "2) Add homework\n"
+            << "3) Add exam date\n"
+            << "4) Show progress\n"
+            << "5) Course report by name\n"
+            << "6) Show deadlines in the next N days\n"
+            << "7) Mark course units as completed\n"
+            << "8) Remove course\n"
+            << "9) Remove assignment\n"
+            << "10) Remove event\n"
+            << "11) Rename course\n"
+            << "12) Set course units\n"
+            << "13) Edit assignment title\n"
+            << "14) Edit assignment due\n"
+            << "15) Edit assignment notes\n"
+            << "16) Rename event\n"
+            << "17) Set event date\n"
+            << "18) RESET from tastatura.txt\n"
+            << "0) Exit\n> ";
+
+        int opt{};
+        if (!(std::cin >> opt)) { save(); return 0; }
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+        switch (opt) {
+            case 0:  save(); return 0;
+
+            case 1:  addCourseFromInput(st);       save(); break;
+            case 2:  addAssignment(st);            save(); break;
+            case 3:  addSessionDate(st);           save(); break;
+            case 4:  std::cout << st << "\n";               break;
+
+            case 5: {
+                std::string name = readLine("Course title: ");
+                std::cout << st.courseReport(name) << "\n";
+                break;
             }
-            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
-            switch (opt) {
-                case 0: return 0;
-                case 1: addCourseFromInput(st); break;
-                case 2: addAssignment(st); break;
-                case 3: addSessionDate(st); break;
-                case 4: std::cout << st << "\n"; break;
-                case 5: {
-                    std::string name = readLine("Course title: ");
-                    std::cout << st.courseReport(name) << "\n";
-                    break;
+            case 6: {
+                int days = readInt("Days ahead (>=1): ", 1, 3650);
+                auto v = st.upcomingDeadlines(days);
+                if (v.empty()) std::cout << "No assignments in the next " << days << " days.\n";
+                else {
+                    std::cout << "Assignments in the next " << days << " days:\n";
+                    for (const auto& a : v) std::cout << "  * " << a << "\n";
                 }
-                default:
-                    std::cout << "Invalid option.\n";
-                    break;
-                case 6: {
-                    int days = readInt("Days ahead (>=1): ", 1, 3650);
-                    auto v = st.upcomingDeadlines(days);
-                    if (v.empty()) {
-                        std::cout << "No assignments in the next " << days << " days.\n";
-                    } else {
-                        std::cout << "Assignments in the next" << days << " days:\n";
-                        for (const auto& a : v) std::cout << "  * " << a << "\n";
-                    }
-                    break;
-                }
-                case 7: {
-                    std::string name = readLine("Course title: ");
-                    int units = readInt("Units to mark as completed (>=0): ", 0, 1'000'000);
-
-                    bool ok = st.completeCourseUnits(name, units);
-                    std::cout << (ok ? "Updated.\n" : "Course not found.\n");
-                    break;
-                }
-                case 8:  RemoveCourse(st); break;
-                case 9:  RemoveAssignment(st); break;
-                case 10: RemoveEvent(st); break;
-                case 11: RenameCourse(st); break;
-                case 12: SetCourseUnits(st); break;
-                case 13: EditAssignmentTitle(st); break;
-                case 14: EditAssignmentDue(st); break;
-                case 15: EditAssignmentNotes(st); break;
-                case 16: RenameEvent(st); break;
-                case 17: SetEventDate(st); break;
-
+                break;
             }
+
+            case 7: {
+                std::string name = readLine("Course title: ");
+                int units = readInt("Units to mark as completed (>=0): ", 0, 1'000'000);
+                bool ok = st.completeCourseUnits(name, units);
+                std::cout << (ok ? "Updated.\n" : "Course not found.\n");
+                save(); break;
+            }
+
+            case 8:  RemoveCourse(st);             save(); break;
+            case 9:  RemoveAssignment(st);         save(); break;
+            case 10: RemoveEvent(st);              save(); break;
+            case 11: RenameCourse(st);             save(); break;
+            case 12: SetCourseUnits(st);           save(); break;
+            case 13: EditAssignmentTitle(st);      save(); break;
+            case 14: EditAssignmentDue(st);        save(); break;
+            case 15: EditAssignmentNotes(st);      save(); break;
+            case 16: RenameEvent(st);              save(); break;
+            case 17: SetEventDate(st);             save(); break;
+
+            case 18: {
+                // RESET: ștergem save + reîncărcăm seed
+                std::error_code ec;
+                fs::remove(SAVE_FILE, ec);  // ignorăm erorile
+                loadSeed();
+                save();                     // reîncepem cu o stare curată
+                break;
+            }
+
+            default:
+                std::cout << "Invalid option.\n";
+                break;
         }
-
-
-        return 0;
     }
+}
+
