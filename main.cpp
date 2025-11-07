@@ -14,6 +14,7 @@
 #include <filesystem>
 #include <unordered_set>
 #include <filesystem>
+#include <cctype>
 
 namespace fs = std::filesystem;
 using namespace std;
@@ -619,10 +620,10 @@ class CalendarEvent {
     return s;
     }
 
-    static std::string trim(std::string s) {
+    static std::string trim(const std::string& s) {
         size_t i = 0, j = s.size();
         while (i < j && std::isspace(static_cast<unsigned char>(s[i]))) ++i;
-        while (j > i && std::isspace(static_cast<unsigned char>(s[j-1]))) --j;
+        while (j > i && std::isspace(static_cast<unsigned char>(s[j - 1]))) --j;
         return s.substr(i, j - i);
     }
 
