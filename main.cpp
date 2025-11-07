@@ -13,9 +13,22 @@
 #include <fstream>
 #include <filesystem>
 #include <unordered_set>
+#include <filesystem>
 
 namespace fs = std::filesystem;
 using namespace std;
+
+    static const std::filesystem::path& projectRoot() {
+    static const std::filesystem::path p =
+        std::filesystem::absolute(std::filesystem::path(__FILE__)).parent_path();
+    return p;
+    }
+
+    const fs::path SEED_FILE = projectRoot() / "tastatura.txt";
+
+    const fs::path SAVE_FILE = projectRoot() / "save_data.txt";
+
+
 
 class TextBuffer {
 private:
@@ -41,7 +54,7 @@ public:
 
     TextBuffer& operator = (const TextBuffer& other) {
         if (this == &other) return *this;
-        delete[] data_; // elibereaza memoria curenta
+        delete[] data_;
         data_ = duplicate(other.data_, len_);
         return *this;
 
@@ -160,6 +173,8 @@ std::string readDateYMD(const std::string& prompt) {
             int completedUnits_;
             static int clamp(int v, int lo, int hi) { return std::max(lo, std::min(v, hi));}
 
+            std::vector<std::string> tags_;
+
     public:
         explicit Course(string name, int totalUnits, int completedUnits = 0)
             : name_(std::move(name)),
@@ -176,12 +191,44 @@ std::string readDateYMD(const std::string& prompt) {
             [[nodiscard]]double progress() const {
                 if (totalUnits_ == 0) return 0.0;
                 return 100.0 * static_cast<double>(completedUnits_) / static_cast<double>(totalUnits_);}
+
+            const std::vector<std::string>& tags() const { return tags_; }
+
+            bool hasTag(const std::string& tg) const {
+            for (const auto& t : tags_) if (t == tg) return true;
+            return false;
+        }
+
+            bool addTag(const std::string& tg) {
+            if (tg.empty()) return false;
+            if (hasTag(tg)) return false;
+            tags_.push_back(tg);
+            return true;
+        }
+
+            bool removeTag(const std::string& tg) {
+            auto it = std::remove(tags_.begin(), tags_.end(), tg);
+            if (it == tags_.end()) return false;
+            tags_.erase(it, tags_.end());
+            return true;
+        }
+
     };
 
     std::ostream& operator<<(std::ostream& os, const Course& c) {
          os << "Course(name = '" << c.name() << ","
                << c.completedUnits() << "/" << c.totalUnits()
                << "(" << std::fixed << std::setprecision(1) << c.progress() << "%)}";
+
+        os << " [tags:";
+        if (c.tags().empty()) os << "-";
+        else {
+            for (size_t i = 0; i < c.tags().size(); ++i) {
+                if (i) os << ',';
+                os << c.tags()[i];
+            }
+        }
+        os << "]";
         return os;
     }
 
@@ -199,6 +246,7 @@ class CalendarEvent {
 
     ostream& operator<<(ostream& os, const CalendarEvent& e) {
         return os << "Event {" << e.label() << "->" << formatDate(e.date()) << "}";
+
     }
 
     class StudyTracker {
@@ -299,6 +347,21 @@ class CalendarEvent {
             }
             return false;
         }
+
+        bool addTagToCourse(const std::string& name, const std::string& tg) {
+            for (auto& c : courses_) if (c.name() == name) return c.addTag(tg);
+            return false;
+        }
+        bool removeTagFromCourse(const std::string& name, const std::string& tg) {
+            for (auto& c : courses_) if (c.name() == name) return c.removeTag(tg);
+            return false;
+        }
+        std::vector<Course> filterByTag(const std::string& tg) const {
+            std::vector<Course> out;
+            for (const auto& c : courses_) if (c.hasTag(tg)) out.push_back(c);
+            return out;
+        }
+
 
     };
 
@@ -556,6 +619,14 @@ class CalendarEvent {
     return s;
     }
 
+    static std::string trim(std::string s) {
+        size_t i = 0, j = s.size();
+        while (i < j && std::isspace(static_cast<unsigned char>(s[i]))) ++i;
+        while (j > i && std::isspace(static_cast<unsigned char>(s[j-1]))) --j;
+        return s.substr(i, j - i);
+    }
+
+
     void loadFromFiles(StudyTracker& st, const std::string& path) {
         std::ifstream fin(path);
         if (!fin) return;
@@ -569,16 +640,40 @@ class CalendarEvent {
             if (!(in >> tip)) continue;
 
             if (tip == 1) {
-                std::string name; int total, done;
-                if (in >> name >> total >> done) {
-                    st.addCourse(Course(name, total, done));
+                auto firstSpace = line.find_first_of(" \t");
+                if (firstSpace == std::string::npos) continue;
+                std::string afterTip = trim(line.substr(firstSpace + 1));
+
+                std::string tagsPart;
+                auto barPos = afterTip.find('|');
+                if (barPos != std::string::npos) {
+                    tagsPart = trim(afterTip.substr(barPos + 1));
+                    afterTip = trim(afterTip.substr(0, barPos));
                 }
-            } else if (tip == 2) {
+
+                std::istringstream in2(afterTip);
+                std::string name; int total = 0, done = 0;
+                if (!(in2 >> name >> total >> done)) continue;
+
+                Course c(name, total, done);
+
+                if (!tagsPart.empty()) {
+                    std::istringstream ts(tagsPart);
+                    std::string tg;
+                    while (std::getline(ts, tg, ',')) {
+                        tg = trim(tg);
+                        if (!tg.empty()) c.addTag(tg);
+                    }
+                }
+                st.addCourse(c);
+            }
+            else if (tip == 2) {
                 std::string title, notes, due;
                 if (in >> title >> notes >> due) {
                     st.addAssignment(Assignment(title, notes.c_str(), due));
                 }
-            } else if (tip == 3) {
+            }
+            else if (tip == 3) {
                 std::string label, date;
                 if (in >> label >> date) {
                     st.addEvent(CalendarEvent(label, date));
@@ -587,7 +682,7 @@ class CalendarEvent {
         }
     }
 
-    void saveToFile(const StudyTracker& st, const std::string& path) {
+void saveToFile(const StudyTracker& st, const std::string& path) {
         std::ofstream out(path, std::ios::trunc);
         if (!out) {
             std::cerr << "ERROR" << path << "\n";
@@ -598,7 +693,16 @@ class CalendarEvent {
             out << 1 << ' '
                 << packNoSpaces(c.name()) << ' '
                 << c.totalUnits() << ' '
-                << c.completedUnits() << '\n';
+                << c.completedUnits();
+
+            if (!c.tags().empty()) {
+                out << " |";
+                for (size_t i = 0; i < c.tags().size(); ++i) {
+                    if (i) out << ',';
+                    out << c.tags()[i];
+                }
+            }
+            out << '\n';
         }
 
         for (const auto& a : st.assignments_) {
@@ -616,12 +720,36 @@ class CalendarEvent {
     }
 
 
+    void AddTagToCourse(StudyTracker& st) {
+        std::string name = readLine("Course title: ");
+        std::string tg   = readLine("Tag (one word): ");
+        std::cout << (st.addTagToCourse(name, tg) ? "Tag added.\n"
+                                                  : "Course not found or tag already exists.\n");
+    }
+
+    void RemoveTagFromCourse(StudyTracker& st) {
+        std::string name = readLine("Course title: ");
+        std::string tg   = readLine("Tag to remove: ");
+        std::cout << (st.removeTagFromCourse(name, tg) ? "Tag removed.\n"
+                                                       : "Course not found or tag missing.\n");
+    }
+
+    void ListCoursesByTag(const StudyTracker& st) {
+        std::string tg = readLine("Tag to filter by: ");
+        auto v = st.filterByTag(tg);
+        if (v.empty()) {
+            std::cout << "No courses have tag '" << tg << "'.\n";
+        } else {
+            std::cout << "Courses with tag '" << tg << "':\n";
+            for (const auto& c : v) std::cout << "  - " << c << "\n";
+        }
+    }
+
+
+
 int main() {
     ios::sync_with_stdio(false);
     StudyTracker st;
-
-    const fs::path SEED_FILE = "tastatura.txt";
-    const fs::path SAVE_FILE = fs::current_path() / "save_data.txt";
 
     auto loadSeed = [&](){
         st.clearAll();
@@ -641,7 +769,6 @@ int main() {
         std::cout << "[saved]   " << fs::absolute(SAVE_FILE) << "\n";
     };
 
-    // Load ONCE
     if (fs::exists(SAVE_FILE)) loadSave(); else loadSeed();
 
     while (true) {
@@ -663,7 +790,10 @@ int main() {
             << "15) Edit assignment notes\n"
             << "16) Rename event\n"
             << "17) Set event date\n"
-            << "18) RESET from tastatura.txt\n"
+            << "18) Reset from tastatura.txt\n"
+            << "19) Add tag to course\n"
+            << "20) Remove tag from course\n"
+            << "21) List courses by tag\n"
             << "0) Exit\n> ";
 
         int opt{};
@@ -715,13 +845,16 @@ int main() {
             case 17: SetEventDate(st);             save(); break;
 
             case 18: {
-                // RESET: ștergem save + reîncărcăm seed
                 std::error_code ec;
-                fs::remove(SAVE_FILE, ec);  // ignorăm erorile
+                fs::remove(SAVE_FILE, ec);
                 loadSeed();
-                save();                     // reîncepem cu o stare curată
+                save();
                 break;
             }
+
+            case 19: AddTagToCourse(st); save(); break;
+            case 20: RemoveTagFromCourse(st); save(); break;
+            case 21: ListCoursesByTag(st);    break;
 
             default:
                 std::cout << "Invalid option.\n";
