@@ -67,7 +67,7 @@ static std::time_t to_time_t_ymd(const Date& d) {
 
 static Date todayDate() {
     std::time_t t = std::time(nullptr);
-    std::tm* lt = std::localtime(&t);
+    const std::tm* lt = std::localtime(&t);
     std::ostringstream os;
     os << (1900 + lt->tm_year) << '-'
        << std::setw(2) << std::setfill('0') << (1 + lt->tm_mon) << '-'
