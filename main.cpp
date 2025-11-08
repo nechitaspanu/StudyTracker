@@ -1,8 +1,7 @@
 #include <iostream>
-#include <chrono>
+#include <cmath>
 #include <thread>
 #include <ostream>
-#include <SFML/Graphics.hpp>
 #include <cstring>
 #include <sstream>
 #include <stdexcept>
@@ -25,33 +24,60 @@ static const fs::path &projectRoot() {
     return p;
 }
 
-static std::chrono::sys_days parseDate(const std::string &ymd) {
-    int y, m, d;
-    char c1, c2;
-    istringstream is(ymd);
-    if (!(is >> y >> c1 >> m >> c2 >> d) || c1 != '-' || c2 != '-') throw runtime_error("Invalid date");
-    using namespace std::chrono;
+struct Date {
+    int y{1970}, m{1}, d{1};
 
-    year_month_day ymdv{
-        year{y},
-        month{static_cast<unsigned>(m)},
-        day{static_cast<unsigned>(d)}
-    };
+    static bool parse(const std::string& s, Date& out) {
+        if (s.size() != 10 || s[4] != '-' || s[7] != '-') return false;
+        auto dig = [](char c){ return c >= '0' && c <= '9'; };
+        for (int i : {0,1,2,3,5,6,8,9}) if (!dig(s[i])) return false;
 
-    if (!ymdv.ok()) throw std::runtime_error("Invalid calendar date");
-    return sys_days{ymdv};
+        out.y = std::stoi(s.substr(0,4));
+        out.m = std::stoi(s.substr(5,2));
+        out.d = std::stoi(s.substr(8,2));
+        return out.ok();
+    }
+
+    bool ok() const {
+        if (m < 1 || m > 12) return false;
+        static const int md[13] = {0,31,28,31,30,31,30,31,31,30,31,30,31};
+        int mdays = md[m];
+        if (m == 2 && ((y%4==0 && y%100!=0) || (y%400==0))) mdays = 29;
+        return d >= 1 && d <= mdays;
+    }
+
+    std::string str() const {
+        std::ostringstream os;
+        os << y << '-' << std::setw(2) << std::setfill('0') << m
+           << '-' << std::setw(2) << std::setfill('0') << d;
+        return os.str();
+    }
+
+    auto key() const { return std::tie(y,m,d); }
+    bool operator<(const Date& o)  const { return key() <  o.key(); }
+    bool operator==(const Date& o) const { return key() == o.key(); }
+};
+
+static Date todayDate() {
+    std::time_t t = std::time(nullptr);
+    std::tm* lt = std::localtime(&t);
+    Date d; d.y = 1900 + lt->tm_year; d.m = 1 + lt->tm_mon; d.d = lt->tm_mday;
+    return d;
+}
+static std::time_t to_time_t(const Date& dd) {
+    std::tm tm{}; tm.tm_year = dd.y - 1900; tm.tm_mon = dd.m - 1; tm.tm_mday = dd.d;
+    tm.tm_hour = 0; tm.tm_min = 0; tm.tm_sec = 0; tm.tm_isdst = -1;
+    return std::mktime(&tm);
+}
+static int daysBetween(const Date& a, const Date& b) {
+    long long sec = std::llround(std::difftime(to_time_t(b), to_time_t(a)));
+    return static_cast<int>(sec / 86400);
 }
 
-static std::string formatDate(std::chrono::sys_days dd) {
-    using namespace std::chrono;
-    year_month_day ymd = dd;
-    ostringstream os;
-    os << int(ymd.year()) <<
-            '-' << std::setw(2) << std::setfill('0') << static_cast<unsigned>(ymd.month()) <<
-            '-' << std::setw(2) << std::setfill('0') << static_cast<unsigned>(ymd.day());
-
-    return os.str();
+static Date parseDate(const std::string& ymd) {
+    Date d; if (!Date::parse(ymd, d)) throw std::runtime_error("Invalid date"); return d;
 }
+static std::string formatDate(const Date& d) { return d.str(); }
 
 std::string readLine(const std::string &prompt) {
     std::cout << prompt;
@@ -91,7 +117,7 @@ class Assignment {
 private:
     string title_;
     std::string notes_;
-    chrono::sys_days due_;
+    Date due_;
 
 public:
     explicit Assignment(std::string title, std::string notes, const std::string &due)
@@ -100,12 +126,12 @@ public:
 
     [[nodiscard]] const string &title() const { return title_; }
     [[nodiscard]] const string &notes() const { return notes_; }
-    [[nodiscard]] std::chrono::sys_days due() const { return due_; }
+    [[nodiscard]] Date due() const { return due_; }
 
     [[nodiscard]] bool isDueWithinDays(int daysCount) const {
-        using namespace std::chrono;
-        const sys_days today = floor<days>(system_clock::now());
-        return due_ >= today && due_ <= today + days{daysCount};
+        Date today = todayDate();
+        int diff = daysBetween(today, due_);
+        return diff >= 0 && diff <= daysCount;
     }
 };
 
@@ -187,14 +213,14 @@ std::ostream &operator<<(std::ostream &os, const Course &c) {
 class CalendarEvent {
 private:
     string label_;
-    chrono::sys_days date_;
+    Date date_;
 
 public:
     explicit CalendarEvent(string label, const string &ymd) : label_(std::move(label)), date_(parseDate(ymd)) {
     }
 
     [[nodiscard]] const string &label() const { return label_; }
-    [[nodiscard]] chrono::sys_days date() const { return date_; }
+    [[nodiscard]] Date date() const { return date_; }
 };
 
 ostream &operator<<(ostream &os, const CalendarEvent &e) {

@@ -9,4 +9,5 @@
 2 tema_bd join-uri 2025-11-10
 2 tema_algo recursivitate 2025-11-15
 2 tema_fizica mecanica 2025-11-28
+2 tema_algebra matrice 2026-12-28
 3 colocviu_poo 2025-12-12
