@@ -60,8 +60,11 @@ struct Date {
 
 static Date todayDate() {
     std::time_t t = std::time(nullptr);
-    std::tm* lt = std::localtime(&t);
-    Date d; d.y = 1900 + lt->tm_year; d.m = 1 + lt->tm_mon; d.d = lt->tm_mday;
+    const std::tm* lt = std::localtime(&t);
+    Date d;
+    d.y = 1900 + lt->tm_year;
+    d.m = 1 + lt->tm_mon;
+    d.d = lt->tm_mday;
     return d;
 }
 static std::time_t to_time_t(const Date& dd) {
