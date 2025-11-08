@@ -128,7 +128,7 @@ public:
 
     [[nodiscard]] const string &title() const { return title_; }
     [[nodiscard]] const string &notes() const { return notes_; }
-    [[nodiscard]] Date due() const { return due_; }
+    [[nodiscard]] const Date& due() const noexcept { return due_; }
 
     [[nodiscard]] bool isDueWithinDays(int daysCount) const {
         Date today = todayDate();
@@ -222,7 +222,7 @@ public:
     }
 
     [[nodiscard]] const string &label() const { return label_; }
-    [[nodiscard]] Date date() const { return date_; }
+    [[nodiscard]] const Date& date() const noexcept { return date_; }
 };
 
 ostream &operator<<(ostream &os, const CalendarEvent &e) {
