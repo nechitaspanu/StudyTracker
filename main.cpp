@@ -20,10 +20,21 @@ using namespace std;
 
 namespace fs = std::filesystem;
 
-static const fs::path &projectRoot() {
-    static const fs::path p = fs::absolute(fs::path(__FILE__)).parent_path();
-    return p;
+static fs::path computeSaveFilePath(const char *argv0) {
+    fs::path base;
+    if (argv0 && *argv0) {
+        fs::path candidate(argv0);
+        if (candidate.is_relative()) {
+            candidate = fs::current_path() / candidate;
+        }
+        base = candidate.parent_path();
+    }
+    if (base.empty()) {
+        base = fs::current_path();
+    }
+    return fs::absolute(base / "save_data.txt");
 }
+
 
 using Date = std::string;
 
@@ -739,12 +750,12 @@ void ListCoursesByTag(const StudyTracker &st) {
 }
 
 
-int main() {
+int main(int argc, char **argv) {
     ios::sync_with_stdio(false);
 
     StudyTracker st;
 
-    const std::filesystem::path SAVE_FILE = projectRoot() / "save_data.txt";
+    const fs::path SAVE_FILE = computeSaveFilePath(argc > 0 ? argv[0] : nullptr);
 
     std::error_code ec;
     std::filesystem::create_directories(SAVE_FILE.parent_path(), ec);
