@@ -59,6 +59,16 @@ endif()
 # NOTE: update executable name in .github/workflows/cmake.yml:25 when changing name here
 add_executable(${MAIN_EXECUTABLE_NAME}
     main.cpp
+        Utils.h
+        Utils.cpp
+        Assignment.h
+        Assignment.cpp
+        Course.h
+        Course.cpp
+        CalendarEvent.h
+        CalendarEvent.cpp
+        StudyTracker.h
+        StudyTracker.cpp
 )
 
 # NOTE: Add all defined targets (e.g. executables, libraries, etc. )
