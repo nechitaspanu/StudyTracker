@@ -238,6 +238,16 @@ std::ostream &operator<<(std::ostream &os, const StudyTracker &st) {
     os << "---Assignments---" << std::endl;
     for (const auto &a: st.assignments_) os << "-" << a << "\n";
     os << "---Events---" << std::endl;
+    os << "---Goals---" << std::endl;
+    if (st.goals_.empty()) {
+        os << "(No goals yet)\n";
+    } else {
+        for (const auto* g : st.goals_) {
+            os << "-" << *g;
+            if (g->isAchieved()) os << " [COMPLET]";
+            os << "\n";
+        }
+    }
     for (const auto &e: st.events_) os << "-" << e << "\n";
     os << "Overall progress:" << std::fixed << std::setprecision(1)
        << st.overallProgress() << "%\n";
@@ -291,6 +301,39 @@ void saveToFile(const StudyTracker &st, const std::string &path) {
             << packNoSpaces(e.label()) << ' '
             << formatDate(e.date()) << '\n';
     }
+
+    for (const auto *g: st.goals_) {
+        if (auto *rg = dynamic_cast<const ReadingGoal *>(g)) {
+            out << 4 << ' '
+                << 1 << ' '
+                << packNoSpaces(g->getDescription()) << ' '
+                << rg->getTarget() << ' '
+                << rg->getRead() << '\n';
+        } else if (auto *tg = dynamic_cast<const TimeGoal *>(g)) {
+            out << 4 << ' '
+                << 2 << ' '
+                << packNoSpaces(g->getDescription()) << ' '
+                << tg->getTarget() << ' '
+                << tg->getDone() << '\n';
+        } else if (auto *eg = dynamic_cast<const ExamGoal *>(g)) {
+            out << 4 << ' '
+                << 3 << ' '
+                << packNoSpaces(g->getDescription()) << ' '
+                << eg->getTarget() << ' '
+                << eg->getCurrent() << '\n';
+        }
+    }
+}
+
+StudyTracker::~StudyTracker() {
+    for (auto* g : goals_) {
+        delete g;
+    }
+    goals_.clear();
+}
+
+void StudyTracker::addGoal(Goal* g) {
+    goals_.push_back(g);
 }
 
 void loadFromFiles(StudyTracker &st, const std::string &path) {
@@ -305,7 +348,8 @@ void loadFromFiles(StudyTracker &st, const std::string &path) {
         int tip;
         if (!(in >> tip)) continue;
 
-        if (tip == 1) { // Course
+        if (tip == 1) {
+            // Course
             auto firstSpace = line.find_first_of(" \t");
             if (firstSpace == std::string::npos) continue;
             std::string afterTip = trim(line.substr(firstSpace + 1));
@@ -333,15 +377,30 @@ void loadFromFiles(StudyTracker &st, const std::string &path) {
                 }
             }
             st.addCourse(c);
-        } else if (tip == 2) { // Assignment
+        } else if (tip == 2) {
             std::string title, notes, due;
             if (in >> title >> notes >> due) {
                 st.addAssignment(Assignment(title, notes, due));
             }
-        } else if (tip == 3) { // Event
+        } else if (tip == 3) {
             std::string label, date;
             if (in >> label >> date) {
                 st.addEvent(CalendarEvent(label, date));
+            }
+        } else if (tip == 4) {
+            int subType;
+            std::string desc;
+            if (in >> subType >> desc) {
+                if (subType == 1) {
+                    int target, read;
+                    if (in >> target >> read) st.addGoal(new ReadingGoal(desc, target, read));
+                } else if (subType == 2) {
+                    int target, done;
+                    if (in >> target >> done) st.addGoal(new TimeGoal(desc, target, done));
+                } else if (subType == 3) {
+                    double target, current;
+                    if (in >> target >> current) st.addGoal(new ExamGoal(desc, target, current));
+                }
             }
         }
     }

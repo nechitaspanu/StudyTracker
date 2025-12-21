@@ -69,6 +69,8 @@ add_executable(${MAIN_EXECUTABLE_NAME}
         CalendarEvent.cpp
         StudyTracker.h
         StudyTracker.cpp
+        Goal.h
+        Goal.cpp
 )
 
 # NOTE: Add all defined targets (e.g. executables, libraries, etc. )

@@ -21,6 +21,7 @@
 #include "Course.h"
 #include "CalendarEvent.h"
 #include "StudyTracker.h"
+#include "Goal.h"
 
 using namespace std;
 
@@ -154,6 +155,29 @@ void ListCoursesByTag(const StudyTracker &st) {
     }
 }
 
+void addGoalMenu(StudyTracker &st) {
+    std::cout << "Goal: 1) Reading, 2) Time, 3) Grade: ";
+    int type = readInt("", 1, 3);
+    std::string desc = readLine("Description: ");
+
+    if (type == 1) {
+        int target = readInt("Page goal: ", 1, 1000);
+        int done = readInt("Read pages: ", 0, target);
+        st.addGoal(new ReadingGoal(desc, target, done));
+    }
+    else if (type == 2) {
+        int target = readInt("Target time (mins): ", 1, 600);
+        int done = readInt("Completed time (mins): ", 0, target);
+        st.addGoal(new TimeGoal(desc, target, done));
+    }
+    else {
+        int target = readInt("Target grade (int): ", 1, 10);
+        int current = readInt("Obtained grade (int): ", 1, 10);
+        st.addGoal(new ExamGoal(desc, (double)target, (double)current));
+    }
+    std::cout << "Objective added!\n";
+}
+
 
 int main(int argc, char **argv) {
     ios::sync_with_stdio(false);
@@ -212,6 +236,7 @@ int main(int argc, char **argv) {
                 << "18) Add tag to course\n"
                 << "19) Remove tag from course\n"
                 << "20) List courses by tag\n"
+                << "21) Add new goal\n"
                 << "0) Exit\n> ";
 
         int opt{};
@@ -294,6 +319,8 @@ int main(int argc, char **argv) {
                 save();
                 break;
             case 20: ListCoursesByTag(st);
+                break;
+            case 21: addGoalMenu(st);
                 break;
 
             default: std::cout << "Invalid option.\n";

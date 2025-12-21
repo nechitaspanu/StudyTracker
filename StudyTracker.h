@@ -8,12 +8,14 @@
 #include "Course.h"
 #include "Assignment.h"
 #include "CalendarEvent.h"
+#include "Goal.h"
 
 class StudyTracker {
 private:
     std::vector<Course> courses_;
     std::vector<Assignment> assignments_;
     std::vector<CalendarEvent> events_;
+    std::vector<Goal*> goals_;
 
     [[nodiscard]] const Course *findCourse(const std::string &name) const;
 
@@ -22,6 +24,9 @@ private:
     static std::string keyEvent(const CalendarEvent &e);
 
 public:
+    StudyTracker() = default;
+    ~StudyTracker();
+    void addGoal(Goal* g);
     void addCourse(const Course &c);
     void addAssignment(const Assignment &a);
     void addEvent(const CalendarEvent &e);
