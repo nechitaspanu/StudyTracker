@@ -22,6 +22,7 @@
 #include "CalendarEvent.h"
 #include "StudyTracker.h"
 #include "Goal.h"
+#include "Exceptions.h"
 
 using namespace std;
 
@@ -324,15 +325,31 @@ int main(int argc, char **argv) {
             case 21: addGoalMenu(st);
                 break;
             case 22: {
-                std::cout << "\nCurrent rule: Assignments are urgent if due within "
+                std::cout << "\nCurrent urgency threshold: "
                           << Assignment::getUrgencyThreshold() << " days.\n";
-                int newDays = readInt("Enter new urgency threshold (days): ", 0, 365);
+                try {
+                    int newDays;
+                    std::cout << "Enter new urgency threshold (days): ";
+                    if (!(std::cin >> newDays)) {
+                        std::cin.clear();
+                        std::cin.ignore(1000, '\n');
+                        throw InvalidInputException("Input is not a valid integer!");
+                    }
+                    if (newDays < 0) {
+                        throw InvalidInputException("Days count cannot be negative!");
+                    }
 
-                Assignment::setUrgencyThreshold(newDays);
+                    Assignment::setUrgencyThreshold(newDays);
+                    std::cout << "Success! Global rule updated.\n";
+                }
+                catch (const InvalidInputException& e) {
+                    std::cerr << "\n[!!! EXCEPTION CAUGHT !!!] " << e.what() << "\n";
+                    std::cerr << "Action cancelled. Please try again with a positive number.\n";
+                }
+                catch (const std::exception& e) {
+                    std::cerr << "Unexpected error: " << e.what() << "\n";
+                }
 
-                std::cout << "Global rule updated! Check the assignment list.\n";
-
-                saveToFile(st, "save_data.txt");
                 break;
             }
 

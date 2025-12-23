@@ -71,6 +71,8 @@ add_executable(${MAIN_EXECUTABLE_NAME}
         StudyTracker.cpp
         Goal.h
         Goal.cpp
+        Exceptions.h
+        Exceptions.cpp
 )
 
 # NOTE: Add all defined targets (e.g. executables, libraries, etc. )
