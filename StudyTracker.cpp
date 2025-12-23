@@ -519,16 +519,16 @@ void StudyTracker::showSessionHistory() const {
     std::cout << "\n--- STUDY SESSION HISTORY ---\n";
     std::cout << "Total sessions: " << sessions_.size() << "\n\n";
 
-    for (const auto& s : sessions_) {
+    for (const auto &s: sessions_) {
         std::cout << "[DATE: " << s.date << "] -> Course: " << s.courseName
-                  << " | Duration: " << s.durationMinutes << " min\n";
+                << " | Duration: " << s.durationMinutes << " min\n";
     }
 
     int totalMinutesAll = std::accumulate(sessions_.begin(), sessions_.end(), 0,
-        [](int sum, const StudySession& s) {
-            return sum + s.durationMinutes;
-        });
+                                          [](int sum, const StudySession &s) {
+                                              return sum + s.durationMinutes;
+                                          });
 
     std::cout << "TOTAL TIME STUDIED: " << totalMinutesAll << " minutes ("
-              << (totalMinutesAll / 60.0) << " hours)\n";
+            << (totalMinutesAll / 60.0) << " hours)\n";
 }
