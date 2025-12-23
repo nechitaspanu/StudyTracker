@@ -13,13 +13,25 @@ private:
     std::string notes_;
     Date due_;
 
+    static int urgencyThresholdDays;
+
 public:
-    explicit Assignment(std::string title, std::string notes, const std::string &due);
+    Assignment(std::string title, std::string notes, const Date &due);
+
+    void print(std::ostream& os) const;
 
     const std::string &title() const;
     const std::string &notes() const;
     const Date& due() const;
 
+    static void setUrgencyThreshold(int days) {
+        urgencyThresholdDays = days;
+    }
+    static int getUrgencyThreshold() {
+        return urgencyThresholdDays;
+    }
+
+    bool isUrgent() const;
     bool isDueWithinDays(int daysCount) const;
 };
 

@@ -237,6 +237,7 @@ int main(int argc, char **argv) {
                 << "19) Remove tag from course\n"
                 << "20) List courses by tag\n"
                 << "21) Add new goal\n"
+                << "22) Set Assignment Urgency Threshold\n"
                 << "0) Exit\n> ";
 
         int opt{};
@@ -322,6 +323,18 @@ int main(int argc, char **argv) {
                 break;
             case 21: addGoalMenu(st);
                 break;
+            case 22: {
+                std::cout << "\nCurrent rule: Assignments are urgent if due within "
+                          << Assignment::getUrgencyThreshold() << " days.\n";
+                int newDays = readInt("Enter new urgency threshold (days): ", 0, 365);
+
+                Assignment::setUrgencyThreshold(newDays);
+
+                std::cout << "Global rule updated! Check the assignment list.\n";
+
+                saveToFile(st, "save_data.txt");
+                break;
+            }
 
             default: std::cout << "Invalid option.\n";
                 break;

@@ -14,6 +14,7 @@ public:
     virtual ~Goal() = default;
     virtual bool isAchieved() const = 0;
     virtual void print(std::ostream& os) const = 0;
+    virtual Goal* clone() const = 0;
 
     friend std::ostream& operator<<(std::ostream& os, const Goal& g);
 
@@ -30,6 +31,8 @@ public:
     bool isAchieved() const override;
     void print(std::ostream& os) const override;
 
+    Goal* clone() const override { return new ReadingGoal(*this); }
+
     int getTarget() const { return pagesTarget_; }
     int getRead() const { return pagesRead_; }
 };
@@ -43,6 +46,8 @@ public:
     bool isAchieved() const override;
     void print(std::ostream& os) const override;
 
+    Goal* clone() const override { return new TimeGoal(*this); }
+
     int getTarget() const { return minutesTarget_; }
     int getDone() const { return minutesDone_; }
 };
@@ -55,6 +60,8 @@ public:
     ExamGoal(std::string desc, double target, double current);
     bool isAchieved() const override;
     void print(std::ostream& os) const override;
+
+    Goal* clone() const override { return new ExamGoal(*this); }
 
     double getTarget() const { return gradeTarget_; }
     double getCurrent() const { return currentGrade_; }

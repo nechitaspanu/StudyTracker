@@ -26,6 +26,10 @@ private:
 public:
     StudyTracker() = default;
     ~StudyTracker();
+
+    StudyTracker(const StudyTracker& other);
+    StudyTracker& operator=(const StudyTracker& other);
+
     void addGoal(Goal* g);
     void addCourse(const Course &c);
     void addAssignment(const Assignment &a);

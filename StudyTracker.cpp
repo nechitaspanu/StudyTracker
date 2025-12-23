@@ -336,6 +336,30 @@ void StudyTracker::addGoal(Goal* g) {
     goals_.push_back(g);
 }
 
+StudyTracker::StudyTracker(const StudyTracker& other)
+    : courses_(other.courses_),
+      assignments_(other.assignments_),
+      events_(other.events_)
+{
+
+    for (const auto* g : other.goals_) {
+        goals_.push_back(g->clone());
+    }
+}
+
+StudyTracker& StudyTracker::operator=(const StudyTracker& other) {
+    if (this == &other) return *this;
+
+    StudyTracker temp(other);
+
+    std::swap(courses_, temp.courses_);
+    std::swap(assignments_, temp.assignments_);
+    std::swap(events_, temp.events_);
+    std::swap(goals_, temp.goals_);
+
+    return *this;
+}
+
 void loadFromFiles(StudyTracker &st, const std::string &path) {
     std::ifstream fin(path);
     if (!fin) return;
@@ -349,7 +373,6 @@ void loadFromFiles(StudyTracker &st, const std::string &path) {
         if (!(in >> tip)) continue;
 
         if (tip == 1) {
-            // Course
             auto firstSpace = line.find_first_of(" \t");
             if (firstSpace == std::string::npos) continue;
             std::string afterTip = trim(line.substr(firstSpace + 1));
