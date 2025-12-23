@@ -6,10 +6,17 @@
 #include <string>
 #include <iostream>
 #include <map>
+#include <numeric>
 #include "Course.h"
 #include "Assignment.h"
 #include "CalendarEvent.h"
 #include "Goal.h"
+
+struct StudySession {
+    std::string courseName;
+    int durationMinutes;
+    std::string date;
+};
 
 class StudyTracker {
 private:
@@ -27,6 +34,8 @@ private:
 public:
     StudyTracker() = default;
     ~StudyTracker();
+
+    std::vector<StudySession> sessions_;
 
     StudyTracker(const StudyTracker& other);
     StudyTracker& operator=(const StudyTracker& other);
@@ -62,6 +71,10 @@ public:
 
     [[nodiscard]] std::vector<Assignment> upcomingDeadlines(int days) const;
     [[nodiscard]] std::string courseReport(const std::string &name) const;
+
+    void logStudySession(const std::string& course, int minutes, const std::string& date);
+    int getTotalTimeForCourse(const std::string& courseName) const;
+    void showSessionHistory() const;
 
     friend std::ostream &operator<<(std::ostream &os, const StudyTracker &st);
     friend void saveToFile(const StudyTracker &st, const std::string &path);

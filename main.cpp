@@ -238,8 +238,10 @@ int main(int argc, char **argv) {
                 << "19) Remove tag from course\n"
                 << "20) List courses by tag\n"
                 << "21) Add new goal\n"
-                << "22) Set Assignment Urgency Threshold\n"
+                << "22) Set assignment urgency threshold\n"
                 << "23) Show busiest day statistics\n"
+                << "24) Log study session\n"
+                << "25) Show study history\n"
                 << "0) Exit\n> ";
 
         int opt{};
@@ -352,10 +354,27 @@ int main(int argc, char **argv) {
                 }
 
                 break;
-            } case 23:
+            }
+            case 23:
                 st.showBusiestDayStatistics();
                 break;
+            case 24: {
+                std::string cName, date;
+                int mins;
+                std::cout << "Enter course name: ";
+                std::cin >> cName;
+                std::cout << "Enter duration (minutes): ";
+                std::cin >> mins;
+                std::cout << "Enter date (YYYY-MM-DD): ";
+                std::cin >> date;
 
+                st.logStudySession(cName, mins, date);
+                break;
+            }
+
+            case 25:
+                st.showSessionHistory();
+                break;
             default: std::cout << "Invalid option.\n";
                 break;
         }

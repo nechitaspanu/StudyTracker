@@ -259,6 +259,13 @@ static std::string packNoSpaces(std::string s) {
     return s;
 }
 
+static std::string unpackSpaces(std::string s) {
+    for (char &c : s) {
+        if (c == '_') c = ' ';
+    }
+    return s;
+}
+
 static std::string trim(const std::string &s) {
     size_t i = 0, j = s.size();
     while (i < j && std::isspace(static_cast<unsigned char>(s[i]))) ++i;
@@ -322,6 +329,11 @@ void saveToFile(const StudyTracker &st, const std::string &path) {
                 << eg->getTarget() << ' '
                 << eg->getCurrent() << '\n';
         }
+    }
+
+    for (const auto& s : st.sessions_) {
+        out << 6 << ' ' << packNoSpaces(s.courseName) << ' '
+            << s.durationMinutes << ' ' << s.date << '\n';
     }
 }
 
@@ -425,6 +437,16 @@ void loadFromFiles(StudyTracker &st, const std::string &path) {
                     if (in >> target >> current) st.addGoal(new ExamGoal(desc, target, current));
                 }
             }
+        }else if (tip == 6) {
+            std::string cName, date;
+            int mins;
+            if (in >> cName >> mins >> date) {
+                StudySession sess;
+                sess.courseName = unpackSpaces(cName);
+                sess.durationMinutes = mins;
+                sess.date = date;
+                st.sessions_.push_back(sess);
+            }
         }
     }
 }
@@ -435,16 +457,13 @@ void StudyTracker::showBusiestDayStatistics() const {
         return;
     }
 
-    // [STL MAP] Using a map to count date frequency
     std::map<std::string, int> frequencyMap;
 
     for (const auto& assign : assignments_) {
-        // Assuming you have formatDate in Utils or Date::toString
         std::string dateStr = formatDate(assign.due());
         frequencyMap[dateStr]++;
     }
 
-    // Finding the maximum
     std::string busiestDate;
     int maxCount = 0;
 
@@ -464,4 +483,52 @@ void StudyTracker::showBusiestDayStatistics() const {
     } else {
         std::cout << "Workload is manageable.\n";
     }
+}
+
+void StudyTracker::logStudySession(const std::string& course, int minutes, const std::string& date) {
+    if (minutes <= 0) {
+        std::cout << "Error: Duration must be positive.\n";
+        return;
+    }
+
+    StudySession sess;
+    sess.courseName = course;
+    sess.durationMinutes = minutes;
+    sess.date = date;
+
+    sessions_.push_back(sess);
+    std::cout << "Session logged! You studied " << minutes << " minutes for " << course << ".\n";
+}
+
+int StudyTracker::getTotalTimeForCourse(const std::string& courseName) const {
+    int total = 0;
+    for (const auto& s : sessions_) {
+        if (s.courseName == courseName) {
+            total += s.durationMinutes;
+        }
+    }
+    return total;
+}
+
+void StudyTracker::showSessionHistory() const {
+    if (sessions_.empty()) {
+        std::cout << "No study sessions recorded yet.\n";
+        return;
+    }
+
+    std::cout << "\n--- STUDY SESSION HISTORY ---\n";
+    std::cout << "Total sessions: " << sessions_.size() << "\n\n";
+
+    for (const auto& s : sessions_) {
+        std::cout << "[DATE: " << s.date << "] -> Course: " << s.courseName
+                  << " | Duration: " << s.durationMinutes << " min\n";
+    }
+
+    int totalMinutesAll = std::accumulate(sessions_.begin(), sessions_.end(), 0,
+        [](int sum, const StudySession& s) {
+            return sum + s.durationMinutes;
+        });
+
+    std::cout << "TOTAL TIME STUDIED: " << totalMinutesAll << " minutes ("
+              << (totalMinutesAll / 60.0) << " hours)\n";
 }
