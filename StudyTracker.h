@@ -73,7 +73,6 @@ public:
     [[nodiscard]] std::string courseReport(const std::string &name) const;
 
     void logStudySession(const std::string& course, int minutes, const std::string& date);
-    int getTotalTimeForCourse(const std::string& courseName) const;
     void showSessionHistory() const;
 
     friend std::ostream &operator<<(std::ostream &os, const StudyTracker &st);

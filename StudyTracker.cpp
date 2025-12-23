@@ -500,16 +500,6 @@ void StudyTracker::logStudySession(const std::string& course, int minutes, const
     std::cout << "Session logged! You studied " << minutes << " minutes for " << course << ".\n";
 }
 
-int StudyTracker::getTotalTimeForCourse(const std::string& courseName) const {
-    int total = 0;
-    for (const auto& s : sessions_) {
-        if (s.courseName == courseName) {
-            total += s.durationMinutes;
-        }
-    }
-    return total;
-}
-
 void StudyTracker::showSessionHistory() const {
     if (sessions_.empty()) {
         std::cout << "No study sessions recorded yet.\n";
