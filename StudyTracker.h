@@ -5,6 +5,7 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <map>
 #include "Course.h"
 #include "Assignment.h"
 #include "CalendarEvent.h"
@@ -34,6 +35,7 @@ public:
     void addCourse(const Course &c);
     void addAssignment(const Assignment &a);
     void addEvent(const CalendarEvent &e);
+    void showBusiestDayStatistics() const;
 
     bool removeCourse(const std::string &name);
     bool removeAssignment(const std::string &title);

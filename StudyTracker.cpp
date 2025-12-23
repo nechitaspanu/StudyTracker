@@ -428,3 +428,40 @@ void loadFromFiles(StudyTracker &st, const std::string &path) {
         }
     }
 }
+
+void StudyTracker::showBusiestDayStatistics() const {
+    if (assignments_.empty()) {
+        std::cout << "No assignments available to calculate statistics.\n";
+        return;
+    }
+
+    // [STL MAP] Using a map to count date frequency
+    std::map<std::string, int> frequencyMap;
+
+    for (const auto& assign : assignments_) {
+        // Assuming you have formatDate in Utils or Date::toString
+        std::string dateStr = formatDate(assign.due());
+        frequencyMap[dateStr]++;
+    }
+
+    // Finding the maximum
+    std::string busiestDate;
+    int maxCount = 0;
+
+    for (const auto& pair : frequencyMap) {
+        if (pair.second > maxCount) {
+            maxCount = pair.second;
+            busiestDate = pair.first;
+        }
+    }
+
+    std::cout << "\n--- WORKLOAD STATISTICS ---\n";
+    std::cout << "The busiest day is: " << busiestDate << "\n";
+    std::cout << "Number of deadlines on that day: " << maxCount << "\n";
+
+    if (maxCount >= 3) {
+        std::cout << "WARNING: It will be a very busy day! Prepare in advance.\n";
+    } else {
+        std::cout << "Workload is manageable.\n";
+    }
+}

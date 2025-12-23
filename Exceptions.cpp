@@ -9,13 +9,13 @@ const char* StudyException::what() const noexcept {
 }
 
 InvalidInputException::InvalidInputException(const std::string& msg)
-    : StudyException("Input Invalid -> " + msg) {
+    : StudyException("Invalid Input -> " + msg) {
 }
 
 DateException::DateException(const std::string& dateStr)
-    : StudyException("Format data incorect sau in trecut: " + dateStr) {
+    : StudyException("Incorrect format data (or in the past): " + dateStr) {
 }
 
 FileException::FileException(const std::string& filename)
-    : StudyException("Problema critica la fisierul: " + filename) {
+    : StudyException("Critical file error: " + filename) {
 }

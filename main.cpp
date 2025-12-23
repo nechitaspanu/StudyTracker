@@ -239,6 +239,7 @@ int main(int argc, char **argv) {
                 << "20) List courses by tag\n"
                 << "21) Add new goal\n"
                 << "22) Set Assignment Urgency Threshold\n"
+                << "23) Show busiest day statistics\n"
                 << "0) Exit\n> ";
 
         int opt{};
@@ -351,7 +352,9 @@ int main(int argc, char **argv) {
                 }
 
                 break;
-            }
+            } case 23:
+                st.showBusiestDayStatistics();
+                break;
 
             default: std::cout << "Invalid option.\n";
                 break;
