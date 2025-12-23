@@ -244,6 +244,7 @@ int main(int argc, char **argv) {
                 << "25) Show study history\n"
                 << "26) Grade Calculator & Exam Predictor\n"
                 << "27) Flashcards\n"
+                << "28) Attendance tracker\n"
                 << "0) Exit\n> ";
 
         int opt{};
@@ -384,6 +385,10 @@ int main(int argc, char **argv) {
             case 27:
                 st.flashcardMode();
                 break;
+            case 28:
+                st.attendanceMenu();
+                break;
+
         }
     }
 }

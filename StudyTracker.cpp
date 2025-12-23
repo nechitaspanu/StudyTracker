@@ -332,8 +332,15 @@ void saveToFile(const StudyTracker &st, const std::string &path) {
     }
 
     for (const auto& s : st.sessions_) {
-        out << 6 << ' ' << packNoSpaces(s.courseName) << ' '
+        out << 5 << ' ' << packNoSpaces(s.courseName) << ' '
             << s.durationMinutes << ' ' << s.date << '\n';
+    }
+
+    for (const auto& entry : st.attendance_) {
+        out << 6 << ' ' << packNoSpaces(entry.first) << ' '
+            << entry.second.present << ' '
+            << entry.second.absent << ' '
+            << entry.second.minRequirement << '\n';
     }
 }
 
@@ -437,7 +444,7 @@ void loadFromFiles(StudyTracker &st, const std::string &path) {
                     if (in >> target >> current) st.addGoal(new ExamGoal(desc, target, current));
                 }
             }
-        }else if (tip == 6) {
+        }else if (tip == 5) {
             std::string cName, date;
             int mins;
             if (in >> cName >> mins >> date) {
@@ -446,6 +453,16 @@ void loadFromFiles(StudyTracker &st, const std::string &path) {
                 sess.durationMinutes = mins;
                 sess.date = date;
                 st.sessions_.push_back(sess);
+            }
+        } else if (tip == 6) {
+            std::string cNameEnc;
+            int p, a, req;
+            if (in >> cNameEnc >> p >> a >> req) {
+                AttendanceRecord rec;
+                rec.present = p;
+                rec.absent = a;
+                rec.minRequirement = req;
+                st.attendance_[unpackSpaces(cNameEnc)] = rec;
             }
         }
     }
@@ -689,4 +706,100 @@ void StudyTracker::runQuiz() {
     std::cout << "\n--- QUIZ FINISHED ---\n";
     std::cout << "Score: " << correctCount << "/" << flashcards_.size() << " ("
               << std::fixed << std::setprecision(1) << score << "%)\n";
+}
+
+void StudyTracker::attendanceMenu() {
+    bool active = true;
+    while (active) {
+        std::cout << "\n--- ATTENDANCE TRACKER (CUSTOM) ---\n";
+        std::cout << "1. Mark attendance/absence\n";
+        std::cout << "2. Check eligibility (Report)\n";
+        std::cout << "3. Set Minimum requirement for a course\n";
+        std::cout << "4. Back\n";
+        std::cout << "Select: ";
+
+        int opt;
+        std::cin >> opt;
+        std::cin.ignore(1000, '\n');
+
+        switch (opt) {
+            case 1: markAttendance(); break;
+            case 2: showAttendanceReport(); break;
+            case 3: setAttendanceGoal(); break;
+            case 4: active = false; break;
+            default: std::cout << "Invalid option.\n";
+        }
+    }
+}
+
+void StudyTracker::markAttendance() {
+    std::string course;
+    std::cout << "Enter course name: ";
+    std::getline(std::cin, course);
+
+    std::cout << "Did you attend today? (y/n): ";
+    char resp;
+    std::cin >> resp;
+
+    if (resp == 'y' || resp == 'Y') {
+        attendance_[course].present++;
+        std::cout << "Marked as PRESENT for '" << course << "'.\n";
+    } else {
+        attendance_[course].absent++;
+        std::cout << "Marked as ABSENT for '" << course << "'.\n";
+    }
+}
+
+void StudyTracker::setAttendanceGoal() {
+    std::string course;
+    std::cout << "Enter Course Name to modify: ";
+    std::getline(std::cin, course);
+
+    if (attendance_.find(course) == attendance_.end()) {
+        std::cout << "Course not found. Please mark attendance at least once to create it.\n";
+        return;
+    }
+
+    int newGoal;
+    std::cout << "Enter new minimum attendance %: ";
+    std::cin >> newGoal;
+
+    if (newGoal < 0 || newGoal > 100) {
+        std::cout << "Invalid percentage.\n";
+    } else {
+        attendance_[course].minRequirement = newGoal;
+        std::cout << "Updated! " << course << " now requires " << newGoal << "% attendance.\n";
+    }
+}
+
+void StudyTracker::showAttendanceReport() const {
+    if (attendance_.empty()) {
+        std::cout << "No attendance data recorded yet.\n";
+        return;
+    }
+
+    std::cout << "\n--- ATTENDANCE REPORT ---\n";
+
+    for (const auto& entry : attendance_) {
+        std::string name = entry.first;
+        int present = entry.second.present;
+        int absent = entry.second.absent;
+        int threshold = entry.second.minRequirement;
+
+        int total = present + absent;
+        double percentage = 0.0;
+
+        if (total > 0) {
+            percentage = (static_cast<double>(present) / total) * 100.0;
+        }
+
+        std::cout << "COURSE: " << name << " (Min: " << threshold << "%)\n";
+        std::cout << "   Stats: " << present << " Present | " << absent << " Absent\n";
+        std::cout << "   Current Rate: " << std::fixed << std::setprecision(1) << percentage << "% ";
+        if (percentage < threshold) {
+            std::cout << " WARNING! Below " << threshold << "%\n";
+        } else {
+            std::cout << "Safe.\n";
+        }
+    }
 }

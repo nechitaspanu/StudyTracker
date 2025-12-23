@@ -7,6 +7,7 @@
 #include <iostream>
 #include <map>
 #include <numeric>
+#include <utility>
 #include "Course.h"
 #include "Assignment.h"
 #include "CalendarEvent.h"
@@ -21,6 +22,12 @@ struct StudySession {
 struct Flashcard {
     std::string question;
     std::string answer;
+};
+
+struct AttendanceRecord {
+    int present = 0;
+    int absent = 0;
+    int minRequirement = 50;
 };
 
 class StudyTracker {
@@ -42,6 +49,7 @@ public:
     ~StudyTracker();
 
     std::vector<StudySession> sessions_;
+    std::map<std::string, AttendanceRecord> attendance_;
 
     void flashcardMode();
     void addFlashcard();
@@ -86,6 +94,11 @@ public:
     void showSessionHistory() const;
 
     void calculateGradeNeeded() const;
+
+    void attendanceMenu();
+    void markAttendance();
+    void showAttendanceReport() const;
+    void setAttendanceGoal();
 
     friend std::ostream &operator<<(std::ostream &os, const StudyTracker &st);
     friend void saveToFile(const StudyTracker &st, const std::string &path);
