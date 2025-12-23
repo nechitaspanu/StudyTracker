@@ -242,6 +242,7 @@ int main(int argc, char **argv) {
                 << "23) Show busiest day statistics\n"
                 << "24) Log study session\n"
                 << "25) Show study history\n"
+                << "26) Grade Calculator & Exam Predictor\n"
                 << "0) Exit\n> ";
 
         int opt{};
@@ -371,11 +372,13 @@ int main(int argc, char **argv) {
                 st.logStudySession(cName, mins, date);
                 break;
             }
-
             case 25:
                 st.showSessionHistory();
                 break;
             default: std::cout << "Invalid option.\n";
+                break;
+            case 26:
+                st.calculateGradeNeeded();
                 break;
         }
     }

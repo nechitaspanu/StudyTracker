@@ -75,6 +75,8 @@ public:
     void logStudySession(const std::string& course, int minutes, const std::string& date);
     void showSessionHistory() const;
 
+    void calculateGradeNeeded() const;
+
     friend std::ostream &operator<<(std::ostream &os, const StudyTracker &st);
     friend void saveToFile(const StudyTracker &st, const std::string &path);
 };

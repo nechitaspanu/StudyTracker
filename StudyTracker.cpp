@@ -522,3 +522,84 @@ void StudyTracker::showSessionHistory() const {
     std::cout << "TOTAL TIME STUDIED: " << totalMinutesAll << " minutes ("
             << (totalMinutesAll / 60.0) << " hours)\n";
 }
+
+void StudyTracker::calculateGradeNeeded() const {
+    std::cout << "\n--- GRADE CALCULATOR & EXAM PREDICTOR ---\n";
+    std::cout << "This tool helps you figure out what grade you need in the final exam.\n\n";
+
+    std::vector<std::pair<double, int>> grades;
+    char choice = 'y';
+    int totalWeight = 0;
+
+    while (choice == 'y' || choice == 'Y') {
+        double grade;
+        int weight;
+
+        std::cout << "Enter partial grade: ";
+        std::cin >> grade;
+
+        if (grade < 1 || grade > 10) {
+            std::cout << "Error: Grade must be between 1 and 10.\n";
+            continue;
+        }
+
+        std::cout << "Enter the weight of this grade (percentage): ";
+        std::cin >> weight;
+
+        if (weight <= 0 || weight > 100) {
+             std::cout << "Error: Invalid weight.\n";
+             continue;
+        }
+
+        grades.push_back({grade, weight});
+        totalWeight += weight;
+
+        if (totalWeight >= 100) {
+            std::cout << "Warning: You reached 100% weight already.\n";
+            break;
+        }
+
+        std::cout << "Add another grade? (y/n): ";
+        std::cin >> choice;
+    }
+
+    if (totalWeight >= 100) {
+        std::cout << "\nError: Total weight is " << totalWeight << "%. No room left for an exam.\n";
+        return;
+    }
+
+    int examWeight = 100 - totalWeight;
+    std::cout << "Accumulated Weight: " << totalWeight << "%\n";
+    std::cout << "Remaining Weight (EXAM): " << examWeight << "%\n";
+
+    double currentScore = 0.0;
+    for (const auto& g : grades) {
+        currentScore += g.first * (g.second / 100.0);
+    }
+
+    std::cout << "Points already secured: " << std::fixed << std::setprecision(2) << currentScore << "\n";
+
+    double target;
+    std::cout << "\nWhat is your desired FINAL Grade?: ";
+    std::cin >> target;
+
+    double requiredExamGrade = (target - currentScore) / (examWeight / 100.0);
+
+    std::cout << "\n>>> RESULT <<<\n";
+
+    if (requiredExamGrade > 10.0) {
+        std::cout << "IMPOSSIBLE: You would need a grade of " << requiredExamGrade << " in the exam.\n";
+        std::cout << "Unfortunately, you cannot reach the final grade of " << target << " with current grades.\n";
+    }
+    else if (requiredExamGrade <= 0) {
+        std::cout << "CONGRATULATIONS: You already have enough points!\n";
+        std::cout << "Even with a 0 in the exam, your final grade will be above " << target << ".\n";
+    }
+    else {
+        std::cout << "To get a final grade of " << target << ", you need to score at least:\n";
+        std::cout << "   [ " << requiredExamGrade << " ]\n";
+
+        if (requiredExamGrade >= 9.0) std::cout << "(It will be tough, but good luck!)\n";
+        else if (requiredExamGrade <= 5.0) std::cout << "(Easily achievable!)\n";
+    }
+}
