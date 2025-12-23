@@ -18,12 +18,18 @@ struct StudySession {
     std::string date;
 };
 
+struct Flashcard {
+    std::string question;
+    std::string answer;
+};
+
 class StudyTracker {
 private:
     std::vector<Course> courses_;
     std::vector<Assignment> assignments_;
     std::vector<CalendarEvent> events_;
     std::vector<Goal*> goals_;
+    std::vector<Flashcard> flashcards_;
 
     [[nodiscard]] const Course *findCourse(const std::string &name) const;
 
@@ -36,6 +42,10 @@ public:
     ~StudyTracker();
 
     std::vector<StudySession> sessions_;
+
+    void flashcardMode();
+    void addFlashcard();
+    void runQuiz();
 
     StudyTracker(const StudyTracker& other);
     StudyTracker& operator=(const StudyTracker& other);

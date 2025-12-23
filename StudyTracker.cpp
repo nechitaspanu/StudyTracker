@@ -603,3 +603,90 @@ void StudyTracker::calculateGradeNeeded() const {
         else if (requiredExamGrade <= 5.0) std::cout << "(Easily achievable!)\n";
     }
 }
+
+void StudyTracker::flashcardMode() {
+    bool stay = true;
+    while (stay) {
+        std::cout << "\n--- FLASHCARD STUDY SYSTEM ---\n";
+        std::cout << "1. Add new flashcard\n";
+        std::cout << "2. Start quiz (test yourself)\n";
+        std::cout << "3. View all cards\n";
+        std::cout << "4. Back to main menu\n";
+        std::cout << "Choice: ";
+
+        int choice;
+        std::cin >> choice;
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+        switch (choice) {
+            case 1: addFlashcard(); break;
+            case 2: runQuiz(); break;
+            case 3:
+                std::cout << "\n--- Your Flashcards ---\n";
+                if (flashcards_.empty()) std::cout << "(No cards yet)\n";
+                for(size_t i=0; i<flashcards_.size(); ++i) {
+                    std::cout << i+1 << ". Q: " << flashcards_[i].question << "\n";
+                }
+                break;
+            case 4: stay = false; break;
+            default: std::cout << "Invalid option.\n";
+        }
+    }
+}
+
+void StudyTracker::addFlashcard() {
+    Flashcard f;
+    std::cout << "\n[NEW CARD]\n";
+    std::cout << "Enter Question: ";
+    std::getline(std::cin, f.question);
+
+    std::cout << "Enter Answer: ";
+    std::getline(std::cin, f.answer);
+
+    if (!f.question.empty() && !f.answer.empty()) {
+        flashcards_.push_back(f);
+        std::cout << "Flashcard added! Total cards: " << flashcards_.size() << "\n";
+    } else {
+        std::cout << "Error: Question/Answer cannot be empty.\n";
+    }
+}
+
+void StudyTracker::runQuiz() {
+    if (flashcards_.empty()) {
+        std::cout << "You need to add flashcards first!\n";
+        return;
+    }
+
+    std::cout << "\n--- QUIZ STARTED ---\n";
+    std::cout << "Press ENTER to reveal the answer.\n";
+
+    int correctCount = 0;
+
+    for (size_t i = 0; i < flashcards_.size(); ++i) {
+        const auto& card = flashcards_[i];
+
+        std::cout << "\nCard " << (i + 1) << "/" << flashcards_.size() << "\n";
+        std::cout << "QUESTION: " << card.question << "\n";
+        std::cout << "(Thinking...) Press Enter to see answer.";
+        std::cin.get();
+
+        std::cout << "ANSWER: " << card.answer << "\n";
+
+        std::cout << "Did you get it right? (y/n): ";
+        char response;
+        std::cin >> response;
+        std::cin.ignore();
+
+        if (response == 'y' || response == 'Y') {
+            correctCount++;
+            std::cout << "Great job!\n";
+        } else {
+            std::cout << "Keep practicing.\n";
+        }
+    }
+
+    double score = (static_cast<double>(correctCount) / flashcards_.size()) * 100.0;
+    std::cout << "\n--- QUIZ FINISHED ---\n";
+    std::cout << "Score: " << correctCount << "/" << flashcards_.size() << " ("
+              << std::fixed << std::setprecision(1) << score << "%)\n";
+}

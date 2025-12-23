@@ -243,6 +243,7 @@ int main(int argc, char **argv) {
                 << "24) Log study session\n"
                 << "25) Show study history\n"
                 << "26) Grade Calculator & Exam Predictor\n"
+                << "27) Flashcards\n"
                 << "0) Exit\n> ";
 
         int opt{};
@@ -379,6 +380,9 @@ int main(int argc, char **argv) {
                 break;
             case 26:
                 st.calculateGradeNeeded();
+                break;
+            case 27:
+                st.flashcardMode();
                 break;
         }
     }
