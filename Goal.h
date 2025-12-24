@@ -67,4 +67,34 @@ public:
     double getCurrent() const { return currentGrade_; }
 };
 
+class SessionGoal : public Goal {
+private:
+    int targetSessions;
+    int currentSessions;
+
+public:
+    SessionGoal(const std::string& desc, int target, int current = 0)
+        : Goal(desc), targetSessions(target), currentSessions(current) {}
+
+    bool isAchieved() const override {
+        return currentSessions >= targetSessions;
+    }
+
+    Goal* clone() const override {
+        return new SessionGoal(*this);
+    }
+
+    void incrementSession() {
+        currentSessions++;
+    }
+
+    int getTarget() const { return targetSessions; }
+    int getCurrent() const { return currentSessions; }
+
+    void print(std::ostream& os) const override {
+        os << "[Session Goal] " << description_ << ": "
+           << currentSessions << "/" << targetSessions << " sessions logged";
+    }
+};
+
 #endif //OOP_GOAL_H

@@ -328,6 +328,12 @@ void saveToFile(const StudyTracker &st, const std::string &path) {
                 << packNoSpaces(g->getDescription()) << ' '
                 << eg->getTarget() << ' '
                 << eg->getCurrent() << '\n';
+        } else if (auto *sg = dynamic_cast<const SessionGoal *>(g)) {
+            out << 4 << ' '
+                << 5 << ' '
+                << packNoSpaces(g->getDescription()) << ' '
+                << sg->getTarget() << ' '
+                << sg->getCurrent() << '\n';
         }
     }
 
@@ -442,9 +448,14 @@ void loadFromFiles(StudyTracker &st, const std::string &path) {
                 } else if (subType == 3) {
                     double target, current;
                     if (in >> target >> current) st.addGoal(new ExamGoal(desc, target, current));
+                } else if (subType == 4) {
+                    int target, current;
+                    if (in >> target >> current) {
+                        st.addGoal(new SessionGoal(unpackSpaces(desc), target, current));
+                    }
                 }
             }
-        }else if (tip == 5) {
+        } else if (tip == 5) {
             std::string cName, date;
             int mins;
             if (in >> cName >> mins >> date) {
@@ -515,6 +526,15 @@ void StudyTracker::logStudySession(const std::string& course, int minutes, const
 
     sessions_.push_back(sess);
     std::cout << "Session logged! You studied " << minutes << " minutes for " << course << ".\n";
+
+    for (auto* g : goals_) {
+        if (auto* sg = dynamic_cast<SessionGoal*>(g)) {
+            sg->incrementSession();
+            if (sg->isAchieved()) {
+                std::cout << "Congratulations! Goal achieved: " << sg->getDescription() << "\n";
+            }
+        }
+    }
 }
 
 void StudyTracker::showSessionHistory() const {

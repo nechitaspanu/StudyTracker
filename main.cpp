@@ -157,8 +157,10 @@ void ListCoursesByTag(const StudyTracker &st) {
 }
 
 void addGoalMenu(StudyTracker &st) {
-    std::cout << "Goal: 1) Reading, 2) Time, 3) Grade: ";
-    int type = readInt("", 1, 3);
+    std::cout << "Goal: 1) Reading, 2) Time, 3) Grade, 4) Consistency (Sessions): ";
+
+    int type = readInt("", 1, 4);
+
     std::string desc = readLine("Description: ");
 
     if (type == 1) {
@@ -171,11 +173,17 @@ void addGoalMenu(StudyTracker &st) {
         int done = readInt("Completed time (mins): ", 0, target);
         st.addGoal(new TimeGoal(desc, target, done));
     }
-    else {
+    else if (type == 3) {
         int target = readInt("Target grade (int): ", 1, 10);
         int current = readInt("Obtained grade (int): ", 1, 10);
         st.addGoal(new ExamGoal(desc, (double)target, (double)current));
     }
+    else {
+        int target = readInt("Target sessions (count): ", 1, 1000);
+        int current = readInt("Current sessions logged: ", 0, target);
+        st.addGoal(new SessionGoal(desc, target, current));
+    }
+
     std::cout << "Objective added!\n";
 }
 
